@@ -5,12 +5,14 @@ import 'package:timezone/timezone.dart' as tz;
 
 class NotificationManager {
   static Future initialize(
-      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin) async {
+      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin, Function(NotificationResponse) onNotificationResponse) async {
     var androidInitialize =
         const AndroidInitializationSettings('mipmap/ic_launcher');
     var initializationSettings =
         InitializationSettings(android: androidInitialize);
-    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings, onDidReceiveNotificationResponse: (notificationResponse){
+      onNotificationResponse(notificationResponse);
+    });
   }
 
   static Future schedule(
@@ -32,6 +34,6 @@ class NotificationManager {
           uiLocalNotificationDateInterpretation:
               UILocalNotificationDateInterpretation.absoluteTime,
           androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          payload: dateTime.toString());
+          payload: '$title;$body;${dateTime.toString()}');
   }
 }

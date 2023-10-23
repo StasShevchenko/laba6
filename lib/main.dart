@@ -1,6 +1,8 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:laba6/create_notification_dialog.dart';
+import 'package:laba6/notification_details_page.dart';
 import 'package:laba6/notification_item.dart';
 import 'package:laba6/notification_manager.dart';
 import 'package:timezone/data/latest.dart' as tz;
@@ -8,14 +10,22 @@ import 'package:timezone/data/latest.dart' as tz;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
-  runApp(const MyApp());
+  final NotificationAppLaunchDetails? notificationAppLaunchDetails =
+      await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();
+  NotificationResponse? response =
+      notificationAppLaunchDetails?.notificationResponse;
+  runApp(MyApp(
+    notificationResponse: response,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  NotificationResponse? notificationResponse;
+
+  MyApp({super.key, required this.notificationResponse});
 
   // This widget is the root of your application.
   @override
@@ -27,13 +37,17 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const MyHomePage(),
+      home: MyHomePage(
+        notificationResponse: notificationResponse,
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
+  NotificationResponse? notificationResponse;
+
+  MyHomePage({super.key, required this.notificationResponse});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -45,7 +59,19 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    NotificationManager.initialize(flutterLocalNotificationsPlugin);
+    if (widget.notificationResponse != null) {
+      Future(() {
+        Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => NotificationDetailsPage(
+                notificationResponse: widget.notificationResponse!)));
+      });
+    }
+    NotificationManager.initialize(flutterLocalNotificationsPlugin,
+        (notification) {
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (context) =>
+              NotificationDetailsPage(notificationResponse: notification)));
+    });
     loadNotifications();
   }
 
@@ -67,26 +93,24 @@ class _MyHomePageState extends State<MyHomePage> {
       body: Center(
           child: _pendingNotifications.isEmpty
               ? Text('Список уведомлений пуст')
-              : Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      loadNotifications();
-                    },
-                    child: ListView.builder(
-                        itemCount: _pendingNotifications.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: NotificationItem(
-                                onDeletePressed: () async {
-                                  await flutterLocalNotificationsPlugin
-                                      .cancel(_pendingNotifications[index].id);
-                                  loadNotifications();
-                                },
-                                notificationData: _pendingNotifications[index]),
-                          );
-                        }),
-                  ),
+              : RefreshIndicator(
+                  onRefresh: () async {
+                    loadNotifications();
+                  },
+                  child: ListView.builder(
+                      itemCount: _pendingNotifications.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: NotificationItem(
+                              onDeletePressed: () async {
+                                await flutterLocalNotificationsPlugin
+                                    .cancel(_pendingNotifications[index].id);
+                                loadNotifications();
+                              },
+                              notificationData: _pendingNotifications[index]),
+                        );
+                      }),
                 )),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -98,11 +122,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     body: body,
                     dateTime: dateTime,
                     fln: flutterLocalNotificationsPlugin);
-                final notifications = await flutterLocalNotificationsPlugin
-                    .pendingNotificationRequests();
-                setState(() {
-                  _pendingNotifications = notifications;
-                });
+               loadNotifications();
               });
         },
         child: Icon(Icons.add_alert),

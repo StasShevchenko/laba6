@@ -110,9 +110,17 @@ class _NotificationDialogState extends State<NotificationDialog> {
         ElevatedButton(
             onPressed: () async {
               try {
-                if(!_isError && _body.isNotEmpty && _title.isNotEmpty) {
-                  await widget.onNotificationAdded(_title, _body, _selectedDate);
-                  if(context.mounted) {
+                if (!_isError && _body.isNotEmpty && _title.isNotEmpty) {
+                  await widget.onNotificationAdded(
+                      _title,
+                      _body,
+                      DateTime(
+                          _selectedDate.year,
+                          _selectedDate.month,
+                          _selectedDate.day,
+                          _selectedDate.hour,
+                          _selectedDate.minute));
+                  if (context.mounted) {
                     Navigator.of(context).pop();
                   }
                 }

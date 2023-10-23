@@ -36,14 +36,16 @@ class NotificationItem extends StatelessWidget {
                           height: 8,
                         ),
                         Text(
-                            "Время: ${DateFormat("dd.MM.yyyy HH:mm").format(DateTime.parse(notificationData.payload!))}"),
+                            "Время: ${DateFormat("dd.MM.yyyy HH:mm").format(DateTime.parse(notificationData!.payload!.split(';')[2]))}"),
                       ],
                     ),
                   ),
                 ),
-                IconButton(onPressed: () {
-                  onDeletePressed();
-                }, icon: const Icon(Icons.delete))
+                IconButton(
+                    onPressed: () {
+                      onDeletePressed();
+                    },
+                    icon: const Icon(Icons.delete))
               ],
             ),
           ],
